@@ -1,26 +1,56 @@
 @import "tailwindcss";
+@import "../styles/tokens.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    box-sizing: border-box;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  html {
+    background: var(--color-nuit);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    /* Volontairement sans fond : le calque de projection (.film-backdrop)
+       est en z-index négatif et serait masqué par un fond sur <body>.
+       La couleur de base est portée par <html> ci-dessus. */
+    color: var(--color-creme);
+    font-family: var(--font-archivo);
+    font-variation-settings: "wdth" 100;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 900;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  ::selection {
+    background: var(--color-matcha);
+    color: var(--color-nuit);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-matcha);
+    outline-offset: 3px;
+  }
+
+  /* Le curseur custom gère lui-même son affichage ; le focus clavier ne
+     dépend jamais de lui (voir CustomCursor.tsx). */
+  ::-webkit-scrollbar {
+    width: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-nuit);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-fumee);
+    border: 3px solid var(--color-nuit);
+  }
 }

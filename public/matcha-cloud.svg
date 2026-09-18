@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="900" viewBox="0 0 900 900">
+  <!--
+    Nuage de matcha — bruit fractal grossier, teinté vert, très basse
+    opacité. Rendu UNE fois ici ; l'animation se fait ensuite par simple
+    transform CSS sur deux copies décalées (jamais en animant le filtre,
+    qui recalculerait le bruit à chaque image et ferait fondre le CPU).
+  -->
+  <filter id="cloud" x="-20%" y="-20%" width="140%" height="140%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.0055" numOctaves="4" seed="7" stitchTiles="stitch" result="noise" />
+    <!-- On écrase les basses valeurs pour garder des masses souples et espacées -->
+    <feComponentTransfer in="noise" result="shaped">
+      <feFuncA type="gamma" amplitude="1" exponent="2.6" offset="0" />
+    </feComponentTransfer>
+    <feColorMatrix
+      in="shaped"
+      type="matrix"
+      values="0 0 0 0 0.624
+              0 0 0 0 0.761
+              0 0 0 0 0.247
+              0 0 0 0.9 0" />
+  </filter>
+  <rect width="900" height="900" filter="url(#cloud)" />
+</svg>

@@ -1,0 +1,727 @@
+/*
+  Source de vérité du système visuel Manufacture — direction "maison de thé,
+  après la fermeture" : un comptoir de matcha cérémoniel dans une ville qui
+  ne dort jamais. Gotham pour l'obscurité et le projecteur unique ; la
+  cérémonie du thé pour la retenue, le geste précis, le vert profond d'un
+  bol encore chaud. Tailwind v4 lit le bloc @theme et génère les utilitaires
+  (bg-nuit, p-s4, font-archivo, shadow-print…). Toute valeur brute vit ici
+  et nulle part ailleurs.
+*/
+
+@theme {
+  /* On repart d'une palette et d'une échelle d'espacement vides : le
+     système Manufacture n'utilise jamais les valeurs par défaut de
+     Tailwind (slate, blue-500, p-5, gap-7…). */
+  --color-*: initial;
+  --spacing-*: initial;
+  --radius-*: initial;
+
+  /* Unité de base de l'échelle d'espacement Tailwind. Indispensable : sans
+     elle, tout utilitaire qui en dérive (inset-0, top-0, p-0…) produit un
+     calc() invalide et se fait purement supprimer — les calques décoratifs
+     en position absolue tombent alors à 0×0. Fixée à 4px, donc toute valeur
+     numérique éventuelle reste sur la grille de 4 du système. */
+  --spacing: 4px;
+
+  /* Couleurs de base — aucune n'est pure noir/blanc */
+  --color-nuit: #120d09; /* fond principal — presque noir, brun chaud (atelier après minuit) */
+  --color-nuit-elevee: #1e1710; /* panneaux, cartes, sections alternées */
+  --color-creme: #f1e6d3; /* texte principal — mousse de lait, jamais blanc pur */
+  --color-fumee: #92917f; /* texte secondaire — pierre grise d'un jardin sec */
+  --color-matcha: #9fc23f; /* accent unique — le vert du thé fouetté, seule couleur vive du site */
+
+  /* Teintes de niche — éclaircies pour rester lisibles sur fond sombre, et
+     désaturées pour ne jamais concurrencer le matcha. Usage strictement
+     limité (filet de carte, pastille, filet supérieur de la page détail).
+     Jamais en aplat, jamais sur du texte. */
+  --color-niche-maroquinerie: #b0895a;
+  --color-niche-bagagerie: #bd7b58;
+  --color-niche-jouets: #c9a750;
+  --color-niche-cosmetique: #bd85a0;
+  --color-niche-textile: #7a9e7c;
+  --color-niche-bijouterie: #8a9dab;
+  --color-niche-mobilier: #a08d76;
+  --color-niche-electronique: #7482c4;
+
+  /* Espacement — base 4, onze paliers autorisés, aucun autre */
+  --spacing-s1: 4px;
+  --spacing-s2: 8px;
+  --spacing-s3: 12px;
+  --spacing-s4: 16px;
+  --spacing-s5: 24px;
+  --spacing-s6: 32px;
+  --spacing-s7: 48px;
+  --spacing-s8: 64px;
+  --spacing-s9: 96px;
+  --spacing-s10: 128px;
+  --spacing-s11: 160px;
+
+  /* Rayon 0 partout ; seule exception déclarée : badges/pastilles */
+  --radius-badge: 2px;
+
+  /* Grille 12 colonnes desktop / 4 mobile — breakpoints du système */
+  --breakpoint-sm: 700px;
+  --breakpoint-md: 860px;
+  --breakpoint-lg: 900px;
+  --breakpoint-xl: 1100px;
+  --breakpoint-2xl: 1200px;
+
+  /* Typographie — noms Google Fonts exacts, chargés dans app/fonts.ts */
+  --font-archivo: var(--font-archivo-loader), "Helvetica Neue", Arial, sans-serif;
+  --font-serif: var(--font-instrument-serif-loader), Georgia, serif;
+  --font-mono: var(--font-plex-mono-loader), ui-monospace, monospace;
+
+  /* Ombre d'impression — décalage net, jamais de flou. La structurelle sort
+     en fumée (visible sur le fond quasi noir) ; l'accent sort en matcha,
+     réservé au CTA primaire — jamais les deux en même temps sur un élément. */
+  --shadow-print: 6px 6px 0 0 var(--color-fumee);
+  --shadow-print-matcha: 6px 6px 0 0 var(--color-matcha);
+}
+
+/*
+  Durées/easings et traits n'ont pas d'équivalent de namespace @theme fiable
+  en v4 (transition-duration/ease sont des utilitaires numériques, pas une
+  échelle nommée) : déclarés en variables CSS brutes, consommés via
+  duration-[var(--d-fast)] / ease-[var(--e-out)] (valeurs arbitraires
+  Tailwind) ou directement en style/CSS pour Framer Motion.
+
+  Framer Motion lit des nombres JS (secondes, tableaux de bézier), jamais des
+  var() CSS. lib/animations.ts redéclare donc D_FAST/D_MID/D_SLOW et
+  E_OUT/E_IO en constantes TypeScript — GARDER CES DEUX FICHIERS SYNCHRONISÉS
+  si les timings changent.
+*/
+
+:root {
+  --d-fast: 220ms;
+  --d-mid: 420ms;
+  --d-slow: 950ms;
+  --e-out: cubic-bezier(0.16, 0.84, 0.3, 1);
+  --e-io: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* Traits — pas de namespace Tailwind adapté aux traits pointillés/rgba,
+     déclarés en variables brutes et consommés via les classes .rule-* plus
+     bas. Traits clairs à faible opacité : lisibles sur fond quasi noir. */
+  --border-structure: 1px solid var(--color-creme);
+  --border-secondaire: 1px solid rgba(241, 230, 211, 0.16);
+  --border-pointille: 1px dotted rgba(241, 230, 211, 0.2);
+  --border-grille: 1px solid rgba(241, 230, 211, 0.09);
+  --grain-opacity: 0.5;
+
+  /* Hauteur des barres cinémascope — pilote aussi la zone sûre du cadre */
+  --letterbox-h: clamp(24px, 5.5vh, 56px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --d-fast: 0ms;
+    --d-mid: 0ms;
+    --d-slow: 0ms;
+  }
+}
+
+/* ————————————————————————————————————————————————————————————
+   Échelle typographique — clamp() desktop→mobile, calculée sur 390→1440px.
+   Seul .text-display / .text-section-title / .text-card-title passent en
+   capitales (Archivo est la seule police du système à le faire).
+   ———————————————————————————————————————————————————————————— */
+
+@layer components {
+  .text-display {
+    font-family: var(--font-archivo);
+    font-weight: 900;
+    font-variation-settings: "wdth" 125;
+    font-size: clamp(44px, 21.71px + 5.71vw, 104px);
+    line-height: 0.86;
+    letter-spacing: -0.035em;
+    text-transform: uppercase;
+  }
+
+  .text-display-serif {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    color: var(--color-matcha);
+    font-size: clamp(38px, 17.94px + 5.14vw, 92px);
+    line-height: 1.02;
+    text-transform: lowercase;
+  }
+
+  .text-section-title {
+    font-family: var(--font-archivo);
+    font-weight: 900;
+    font-variation-settings: "wdth" 118;
+    font-size: clamp(30px, 20.34px + 2.48vw, 56px);
+    line-height: 1.18;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+  }
+
+  .text-card-title {
+    font-family: var(--font-archivo);
+    font-weight: 900;
+    font-variation-settings: "wdth" 118;
+    font-size: clamp(20px, 17.03px + 0.76vw, 28px);
+    line-height: 1.18;
+    text-transform: uppercase;
+  }
+
+  .text-intro {
+    font-family: var(--font-archivo);
+    font-weight: 400;
+    font-variation-settings: "wdth" 100;
+    font-size: clamp(17px, 15.51px + 0.38vw, 21px);
+    line-height: 1.5;
+    max-width: 46ch;
+  }
+
+  .text-body {
+    font-family: var(--font-archivo);
+    font-weight: 400;
+    font-variation-settings: "wdth" 100;
+    font-size: clamp(15px, 14.26px + 0.19vw, 17px);
+    line-height: 1.55;
+    max-width: 65ch;
+  }
+
+  .text-body-tight {
+    font-family: var(--font-archivo);
+    font-weight: 400;
+    font-variation-settings: "wdth" 100;
+    font-size: clamp(15px, 14.26px + 0.19vw, 17px);
+    line-height: 1.55;
+  }
+
+  .text-data {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .text-label {
+    font-family: var(--font-mono);
+    font-weight: 400;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+  }
+
+  /* Prix en grand format (fiche produit) — reste une donnée mesurée : mono
+     tabular-nums, jamais l'italique serif (réservée à l'accent du hero). */
+  .text-price-lg {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: clamp(32px, 24px + 2vw, 44px);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  /* Traits réutilisables */
+  .rule-structure {
+    border: var(--border-structure);
+  }
+  .rule-t-structure {
+    border-top: var(--border-structure);
+  }
+  .rule-b-structure {
+    border-bottom: var(--border-structure);
+  }
+  .rule-secondaire {
+    border: var(--border-secondaire);
+  }
+  .rule-b-secondaire {
+    border-bottom: var(--border-secondaire);
+  }
+  .rule-t-secondaire {
+    border-top: var(--border-secondaire);
+  }
+  .rule-pointille-t {
+    border-top: var(--border-pointille);
+  }
+  .rule-pointille-b {
+    border-bottom: var(--border-pointille);
+  }
+  .rule-grille {
+    border: var(--border-grille);
+  }
+
+  /* Grain — surimpression fixe, jamais un dégradé coloré. mix-blend-mode
+     screen plutôt que multiply : sur fond quasi noir, multiply n'aurait
+     aucun effet visible — screen fait apparaître le grain comme de la
+     poussière dans le faisceau d'une lampe. */
+  .grain-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    background-image: url("/grain.svg");
+    background-size: 240px 240px;
+    mix-blend-mode: screen;
+    opacity: var(--grain-opacity);
+  }
+
+  /* Lueur du comptoir — seule exception ponctuelle à la règle "pas de
+     dégradé pour la profondeur" : un unique halo matcha, radial, très bas
+     en opacité, posé une fois derrière le hero. Jamais répété ailleurs,
+     jamais utilisé comme habillage général. */
+  .lamp-glow {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse 900px 500px at 50% 0%, rgba(159, 194, 63, 0.14), transparent 70%);
+  }
+
+  /* Enso — le trait de pinceau unique de la cérémonie du thé, tracé une
+     fois derrière le hero. Signature graphique du site, jamais dupliquée. */
+  .enso-mark {
+    position: absolute;
+    pointer-events: none;
+    overflow: visible;
+  }
+  .enso-mark circle {
+    fill: none;
+    stroke: var(--color-matcha);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+  }
+
+  /* ——————————————————————————————————————————————————————————
+     COUCHE CINÉMA
+     Le site se lit comme un film : cartons-titres, slug lines de
+     scénario, letterbox, timecodes, clair-obscur, fondu au noir.
+     —————————————————————————————————————————————————————————— */
+
+  /* Letterbox cinémascope — barres noires franches, jamais floutées */
+  .letterbox::before,
+  .letterbox::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: var(--letterbox-h);
+    background: #000;
+    z-index: 3;
+    pointer-events: none;
+  }
+  .letterbox::before {
+    top: 0;
+  }
+  .letterbox::after {
+    bottom: 0;
+  }
+
+  /* Zone sûre du cadre : le contenu ne passe jamais sous les barres.
+     (Déclaré ici et pas en utilitaire arbitraire Tailwind : un
+     calc(clamp(...)) imbriqué n'y survit pas de façon fiable.) */
+  .letterbox-safe {
+    padding-top: calc(var(--letterbox-h) + var(--spacing-s6));
+    padding-bottom: calc(var(--letterbox-h) + var(--spacing-s5));
+  }
+
+  /* L'enso en position de lune : hors cadre à droite, derrière le titre. */
+  .enso-moon {
+    position: absolute;
+    top: 4%;
+    right: -20%;
+    opacity: 0.26;
+  }
+  @media (min-width: 860px) {
+    .enso-moon {
+      right: -7%;
+      opacity: 0.34;
+    }
+  }
+
+  /* Vignette d'objectif — les bords tombent dans le noir, le regard
+     reste au centre du cadre. Jamais assez forte pour manger du texte. */
+  .vignette::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    /* Strictement sous le contenu (qui est en z-2) : une vignette de cinéma
+       assombrit le décor, jamais le texte — sinon le contraste AA tombe. */
+    z-index: 1;
+    pointer-events: none;
+    background: radial-gradient(ellipse 120% 95% at 50% 42%, transparent 42%, rgba(0, 0, 0, 0.5) 100%);
+  }
+
+  /* Pool de lumière — la lampe au-dessus du comptoir, source unique */
+  .light-pool::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse 70% 55% at 50% 0%, rgba(159, 194, 63, 0.1), transparent 68%);
+  }
+
+  /* Slug line de scénario — INT. COMPTOIR — NUIT.
+     Attention : cette classe impose sa couleur (fumée). Sur un fond clair
+     (bandeau inversé), la surcharger explicitement, sinon le contraste
+     tombe à 2,6:1. */
+  .text-slug {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--color-fumee);
+  }
+
+  /* Timecode — donnée de tournage, toujours tabulaire */
+  .text-timecode {
+    font-family: var(--font-mono);
+    font-weight: 400;
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.1em;
+    color: var(--color-matcha);
+  }
+
+  /* Carton-titre — le plus gros caractère du site. Plafonné à 118px : au-delà,
+     une ligne de 12 signes déborde la colonne et se fait rogner par le masque
+     de RevealText (overflow-hidden). */
+  .text-title-card {
+    font-family: var(--font-archivo);
+    font-weight: 900;
+    font-variation-settings: "wdth" 125;
+    font-size: clamp(44px, 16px + 7.2vw, 118px);
+    line-height: 0.84;
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
+  }
+
+  /* Numéro de scène — chiffre géant en filigrane, jamais lu, seulement vu */
+  .text-scene-number {
+    font-family: var(--font-archivo);
+    font-weight: 900;
+    font-variation-settings: "wdth" 125;
+    font-size: clamp(90px, 40px + 12vw, 260px);
+    line-height: 0.8;
+    letter-spacing: -0.05em;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(241, 230, 211, 0.12);
+  }
+
+  /* ——————————————————————————————————————————————————————————
+     FOND ANIMÉ — "la projection"
+     Le site est un film projeté ; la surface de projection est du matcha
+     fouetté. Pile de calques, du fond vers l'avant :
+       1. nuage de matcha (2 copies qui dérivent en sens inverse)
+       2. faisceau du projecteur (respire)
+       3. poussières prises DANS le faisceau (jamais ailleurs)
+       4. rayures et cheveu dans la fenêtre (rares, brefs)
+       5. tremblement de fenêtre (gate weave) sur l'ensemble du fond
+     100 % CSS : aucun JS, aucune hydratation, aucun coût au chargement.
+     Uniquement transform/opacity → composité GPU, jamais de repaint.
+     —————————————————————————————————————————————————————————— */
+
+  .film-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: -10;
+    pointer-events: none;
+    overflow: hidden;
+    background: var(--color-nuit);
+    animation: gate-weave 1.1s steps(3, end) infinite;
+  }
+
+  /* 1. La matière — matcha fouetté, deux nappes en sens contraire.
+        Les durées sont premières entre elles (127s / 173s) : la boucle
+        combinée ne se répète qu'au bout de plusieurs heures. */
+  .backdrop-liquid {
+    position: absolute;
+    inset: -25%;
+    background-image: url("/matcha-cloud.svg");
+    background-size: 78% 78%;
+    will-change: transform;
+  }
+  .backdrop-liquid--a {
+    opacity: 0.5;
+    animation: backdrop-drift-a 127s ease-in-out infinite;
+  }
+  .backdrop-liquid--b {
+    opacity: 0.32;
+    background-size: 124% 124%;
+    animation: backdrop-drift-b 173s ease-in-out infinite;
+  }
+
+  /* 2. Le faisceau — une seule source, au-dessus du cadre, qui respire */
+  .backdrop-beam {
+    position: absolute;
+    top: -12%;
+    left: 50%;
+    width: 130%;
+    height: 95%;
+    transform: translateX(-50%);
+    transform-origin: 50% 0%;
+    background: radial-gradient(
+      ellipse 42% 100% at 50% 0%,
+      rgba(159, 194, 63, 0.11),
+      rgba(159, 194, 63, 0.04) 45%,
+      transparent 72%
+    );
+    animation: beam-breathe 17s ease-in-out infinite;
+    will-change: opacity, transform;
+  }
+
+  /* 3. Les poussières — uniquement dans le cône de lumière, d'où le
+        masque qui les éteint dès qu'elles en sortent. */
+  .backdrop-motes {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 78%;
+    height: 88%;
+    transform: translateX(-50%);
+    -webkit-mask-image: radial-gradient(ellipse 48% 92% at 50% 0%, #000 12%, transparent 76%);
+    mask-image: radial-gradient(ellipse 48% 92% at 50% 0%, #000 12%, transparent 76%);
+  }
+  .backdrop-mote {
+    position: absolute;
+    bottom: 0;
+    width: 2px;
+    height: 2px;
+    border-radius: 9999px;
+    background: var(--color-matcha);
+    opacity: 0;
+    animation-name: mote-rise;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    will-change: transform, opacity;
+  }
+
+  /* 4. Rayure de pellicule — verticale, fine, présente 3 % du temps */
+  .backdrop-scratch {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      rgba(241, 230, 211, 0.5) 18%,
+      rgba(241, 230, 211, 0.22) 64%,
+      transparent
+    );
+    opacity: 0;
+    animation-name: scratch-flick;
+    animation-timing-function: steps(1, end);
+    animation-iteration-count: infinite;
+  }
+
+  @keyframes backdrop-drift-a {
+    0%,
+    100% {
+      transform: translate3d(-3%, -2%, 0) scale(1.14);
+    }
+    50% {
+      transform: translate3d(3%, 2.5%, 0) scale(1.3);
+    }
+  }
+  @keyframes backdrop-drift-b {
+    0%,
+    100% {
+      transform: translate3d(4%, 3%, 0) scale(1.34) rotate(0.6deg);
+    }
+    50% {
+      transform: translate3d(-4%, -2.5%, 0) scale(1.18) rotate(-0.6deg);
+    }
+  }
+  @keyframes beam-breathe {
+    0%,
+    100% {
+      opacity: 0.6;
+      transform: translateX(-50%) scaleY(1);
+    }
+    50% {
+      opacity: 1;
+      transform: translateX(-50%) scaleY(1.05);
+    }
+  }
+  @keyframes mote-rise {
+    0% {
+      transform: translate3d(0, 0, 0);
+      opacity: 0;
+    }
+    14% {
+      opacity: 0.6;
+    }
+    82% {
+      opacity: 0.32;
+    }
+    100% {
+      transform: translate3d(var(--mote-x), calc(-1 * var(--mote-rise)), 0);
+      opacity: 0;
+    }
+  }
+  @keyframes scratch-flick {
+    0%,
+    100% {
+      opacity: 0;
+    }
+    96.5% {
+      opacity: 0;
+    }
+    97% {
+      opacity: 0.55;
+    }
+    97.6% {
+      opacity: 0;
+    }
+    98.2% {
+      opacity: 0.4;
+    }
+    98.9% {
+      opacity: 0;
+    }
+  }
+  /* Tremblement de fenêtre : le plateau d'un projecteur n'est jamais
+     parfaitement stable. Amplitude subliminale, en pas nets. */
+  @keyframes gate-weave {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0);
+    }
+    33% {
+      transform: translate3d(0, -0.5px, 0);
+    }
+    66% {
+      transform: translate3d(0, 0.4px, 0);
+    }
+  }
+
+  /* Marque de changement de bobine ("cigarette burn") — le rond qui
+     clignote en haut à droite juste avant un raccord. */
+  .cue-mark {
+    position: absolute;
+    top: var(--spacing-s7);
+    right: var(--spacing-s7);
+    width: 46px;
+    height: 46px;
+    border-radius: 9999px;
+    border: 2px solid rgba(241, 230, 211, 0.75);
+    box-shadow: inset 0 0 0 6px rgba(18, 13, 9, 0.55);
+    pointer-events: none;
+  }
+
+  /* Sous prefers-reduced-motion, la projection s'arrête net : le fond
+     reste composé, mais plus rien ne bouge. */
+  @media (prefers-reduced-motion: reduce) {
+    .film-backdrop,
+    .backdrop-liquid,
+    .backdrop-beam,
+    .backdrop-mote,
+    .backdrop-scratch {
+      animation: none !important;
+    }
+    .backdrop-mote {
+      opacity: 0.3;
+    }
+  }
+
+  /* Amorce de pellicule — perforations 35 mm en bord de bande */
+  .film-perfs {
+    background-image: repeating-linear-gradient(
+      to right,
+      rgba(241, 230, 211, 0.22) 0 8px,
+      transparent 8px 26px
+    );
+  }
+
+  /* Le curseur natif ne disparaît que si CustomCursor a confirmé son montage
+     JS ET pointer:fine — jamais posé de façon statique (voir CustomCursor.tsx) */
+  .cursor-none-active * {
+    cursor: none !important;
+  }
+
+  /* Bandeaux défilants — seule exception avec la transition de page à la
+     règle "rien ne dépasse 950ms" : boucle continue de 34s, pas de JS. */
+  @keyframes marquee-left {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @keyframes marquee-right {
+    from {
+      transform: translateX(-50%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee-left 34s linear infinite;
+  }
+  .marquee-track-reverse {
+    animation-name: marquee-right;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .marquee-track {
+      animation: none;
+    }
+  }
+
+  /* Curseur de prix — input natif <input type="range">, thumb carré, piste
+     plate. Fonctionne sans JS (soumission de formulaire GET classique). */
+  .input-range {
+    appearance: none;
+    width: 100%;
+    height: 2px;
+    background: var(--color-fumee);
+    cursor: pointer;
+  }
+  .input-range::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: var(--color-creme);
+    border-radius: 0;
+    transition: background-color var(--d-fast) var(--e-out);
+  }
+  .input-range::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: var(--color-creme);
+    border: none;
+    border-radius: 0;
+    transition: background-color var(--d-fast) var(--e-out);
+  }
+  .input-range::-webkit-slider-thumb:hover,
+  .input-range:focus-visible::-webkit-slider-thumb {
+    background: var(--color-matcha);
+  }
+  .input-range::-moz-range-thumb:hover,
+  .input-range:focus-visible::-moz-range-thumb {
+    background: var(--color-matcha);
+  }
+
+  .input-text,
+  .input-select {
+    appearance: none;
+    border: var(--border-structure);
+    border-radius: 0;
+    background: var(--color-nuit-elevee);
+    color: var(--color-creme);
+    padding: var(--spacing-s3) var(--spacing-s4);
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+  }
+  .input-select {
+    background-image: linear-gradient(45deg, transparent 50%, var(--color-creme) 50%),
+      linear-gradient(135deg, var(--color-creme) 50%, transparent 50%);
+    background-position:
+      calc(100% - 20px) center,
+      calc(100% - 15px) center;
+    background-size:
+      5px 5px,
+      5px 5px;
+    background-repeat: no-repeat;
+    padding-right: var(--spacing-s8);
+  }
+}
